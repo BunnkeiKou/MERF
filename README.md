@@ -1,5 +1,4 @@
 # MERF
-
 This is the official code for the paper "A Practical HDR-like Image Generator via Mutual-guided Learning between Multi-exposure Registration and Fusion"
 
 ## Environment Preparing
