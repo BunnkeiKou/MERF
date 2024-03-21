@@ -47,9 +47,9 @@ class CNNEncoder(nn.Module):
 
         feature_dims = [64, 96, 128]
 
-        # self.conv1 = nn.Conv2d(64, feature_dims[0], kernel_size=7, stride=2, padding=3, bias=False)  # 1/2
-        # self.norm1 = norm_layer(feature_dims[0])
-        # self.relu1 = nn.ReLU(inplace=True)
+        self.conv1 = nn.Conv2d(64, feature_dims[0], kernel_size=7, stride=2, padding=3, bias=False)  # 1/2
+        self.norm1 = norm_layer(feature_dims[0])
+        self.relu1 = nn.ReLU(inplace=True)
 
         self.in_planes = feature_dims[0]
         self.layer1 = self._make_layer(feature_dims[0], stride=1, norm_layer=norm_layer)  # 1/2
@@ -99,9 +99,10 @@ class CNNEncoder(nn.Module):
         return nn.Sequential(*layers)
 
     def forward(self, x):
-        # x = self.conv1(x)
-        # x = self.norm1(x)
-        # x = self.relu1(x)
+        x = self.conv1(x)
+        x = self.norm1(x)
+        x = self.relu1(x)
+
         x = self.layer1(x)  # 1/2
         x = self.layer2(x)  # 1/4
         x = self.layer3(x)  # 1/8 or 1/4

@@ -4,7 +4,16 @@ from torch.autograd import Variable
 from .base_model import BaseModel
 from . import networks
 import torch.nn.functional as F
+import numpy as np
 from math import exp
+
+
+def latent2im(image_tensor, imtype=np.uint8):
+    image_numpy = image_tensor[0].detach().cpu().float().numpy()
+    image_numpy = (np.transpose(image_numpy, (1, 2, 0))) * 255.0
+    image_numpy = np.maximum(image_numpy, 0)
+    image_numpy = np.minimum(image_numpy, 255)
+    return image_numpy.astype(imtype)
 
 
 def flow_warp2(x, flow, interp_mode='bilinear', padding_mode='zeros', align_corners=True, use_pad_mask=False):
@@ -59,124 +68,68 @@ class SingleModel(BaseModel):
         self.input_A = self.Tensor(nb, opt.input_nc, 600, 400)
         # self.input_A2 = self.Tensor(nb, opt.input_nc, 600, 400)
         self.input_B = self.Tensor(nb, opt.output_nc, 600, 400)
-        self.input_B2 = self.Tensor(nb, opt.output_nc, 600, 400)
-        self.flow = self.Tensor(nb, opt.output_nc, 600, 400)
-        self.input_C = self.Tensor(nb, opt.output_nc, 600, 400)
-
-        if opt.vgg > 0:
-            # 它是将真实图片卷积得到的feature（一般是用vgg16或者vgg19来提取）与生成图片卷积得到的feature作比较（一般用MSE损失函数），使得高层信息（内容和全局结构）接近，也就是感知的意思。
-            # 在超分中，因为我们经常使用MSE损失函数，会导致输出图片比较平滑（丢掉了细节部分/高频部分），因此适当选择某个层输出的特征输入感知损失函数是可以增强细节
-            self.vgg_loss = networks.PerceptualLoss(opt)  # 感知损失
-            if self.opt.IN_vgg:
-                self.vgg_patch_loss = networks.PerceptualLoss(opt)
-                self.vgg_patch_loss.cuda()
-            # 类型转换
-            self.vgg_loss.cuda()
-            self.vgg = networks.load_vgg16("./model", self.gpu_ids)
-            self.vgg.eval()
-            for param in self.vgg.parameters():
-                param.requires_grad = False
 
         self.avg_pool = nn.AvgPool2d(2, 2)
 
         self.netA = networks.define_A(opt)
-        self.netA.load_state_dict(torch.load("./checkpoints/Final_Flow/800_net_A.pth"), strict=True)
+        # self.netA.load_state_dict(torch.load("./checkpoints/Final_Flow/800_net_A.pth"), strict=True)
         window_size = 4
         self.Mapping = networks.define_Att()
         self.Dual_Att = networks.define_F()
 
-        self.Mapping.load_state_dict(torch.load("./checkpoints/Final_Flow/800_net_M.pth"), strict=True)
+        # self.Mapping.load_state_dict(torch.load("./checkpoints/Final_Flow/800_net_M.pth"), strict=True)
 
         self.netG = networks.define_G(gpu_ids=[], window_size=window_size)
-        self.netG.load_state_dict(torch.load("./checkpoints/Ex_S_SICE/400_net_G.pth"), strict=True)
+        # self.netG.load_state_dict(torch.load("./checkpoints/Ex_S_SICE/400_net_G.pth"), strict=True)
 
         self.refinement_net = networks.define_R()
-        self.refinement_net.load_state_dict(torch.load("./checkpoints/Ex_S_SICE/400_net_R.pth"), strict=True)
+        # self.refinement_net.load_state_dict(torch.load("./checkpoints/Ex_S_SICE/400_net_R.pth"), strict=True)
 
-
-        if not self.isTrain or opt.continue_train:
-            print("---is not train----")
-            which_epoch = opt.which_epoch
-            print("---model is loaded---")
-            self.load_network(self.netG, 'G', which_epoch)
-            self.load_network(self.Dual_Att, 'D', which_epoch)
-            self.load_network(self.Mapping, 'M', which_epoch)
-            self.load_network(self.netA, 'A', which_epoch)
-            self.load_network(self.refinement_net, 'R', which_epoch)
-
-        if self.isTrain:
-            self.old_lr = opt.lr
-
-            self.optimizer_M = torch.optim.Adam(self.Mapping.parameters(),
-                                                lr=opt.lr, betas=(opt.beta1, 0.999))
-            self.optimizer_A = torch.optim.Adam(self.netA.parameters(),
-                                                lr=opt.lr, betas=(opt.beta1, 0.999))
-            self.optimizer_D = torch.optim.Adam(self.Dual_Att.parameters(),
-                                                lr=opt.lr, betas=(opt.beta1, 0.999))
-            self.optimizer_G = torch.optim.Adam(self.netG.parameters(),
-                                                lr=opt.lr, betas=(opt.beta1, 0.999))
-            self.optimizer_R = torch.optim.Adam(self.refinement_net.parameters(),
-                                                lr=opt.lr, betas=(opt.beta1, 0.999))
+        which_epoch = 400
+        self.load_network(self.netG, 'G', which_epoch)
+        self.load_network(self.Dual_Att, 'D', which_epoch)
+        self.load_network(self.Mapping, 'M', which_epoch)
+        self.load_network(self.netA, 'A', which_epoch)
+        self.load_network(self.refinement_net, 'R', which_epoch)
 
         print('---------- Networks initialized -------------')
 
-        if opt.isTrain:
-            self.netG.train()
-            self.Mapping.train()
-            self.netA.train()
-            self.Dual_Att.train()
-            self.refinement_net.train()
-        else:
-            self.netG.eval()
-            self.Mapping.eval()
-            self.netA.eval()
-            self.Dual_Att.eval()
-            self.refinement_net.eval()
+        self.netG.eval()
+        self.Mapping.eval()
+        self.netA.eval()
+        self.Dual_Att.eval()
+        self.refinement_net.eval()
         print('-----------------------------------------------')
 
     def set_input(self, input):
         AtoB = self.opt.which_direction == 'AtoB'
 
-
         self.input_A.resize_(input['A'].size()).copy_(input['A'])
-
-
         self.input_B.resize_(input['B'].size()).copy_(input['B'])
-        self.input_B2.resize_(input['B2'].size()).copy_(input['B2'])
-        self.flow.resize_(input['flow'].size()).copy_(input['flow'])
-
-
-        if self.opt.isTrain:
-            # input_C = YCbCr_transformer(input['C'])
-            self.input_C.resize_(input['C'].size()).copy_(input['C'])
-
         self.image_paths = input['A_paths' if AtoB else 'B_paths']
 
     # get image paths
     def get_image_paths(self):
         return self.image_paths
 
-    def forward(self):
-
+    def predict(self):
         up = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
-        self.identity_A, self.correct_A = self.Mapping.forward(self.input_A)
+        with torch.no_grad():
+            self.identity_A, self.correct_A = self.Mapping.forward(self.input_A)
+            self.identity_B, self.correct_B = self.Mapping.forward(self.input_B)
 
-        self.identity_B, self.correct_B = self.Mapping.forward(self.input_B)
+            self.align_B, self.f_w, self.f_s = self.netA.forward(self.correct_B, self.correct_A, self.identity_B)
 
-        self.align_B, self.f_w, self.f_s = self.netA.forward(self.correct_B, self.correct_A, self.identity_B)
+            self.align_B, self.align_A = self.Dual_Att.forward(self.align_B, self.identity_A)
+            self.img_level = flow_warp2(self.input_B, self.f_w[-1].permute(0, 2, 3, 1))
 
-        self.align_B, self.align_A = self.Dual_Att.forward(self.align_B, self.identity_A)
-        self.img_level = flow_warp2(self.input_B, self.f_w[-1].permute(0, 2, 3, 1))
+            self.align_B_half = self.avg_pool(self.align_B)
+            self.align_A_half = self.avg_pool(self.align_A)
 
-        self.align_B_half = self.avg_pool(self.align_B)
-        self.align_A_half = self.avg_pool(self.align_A)
-
-        self.o_lf, self.x_lf = self.netG.forward(self.align_B_half, self.align_A_half)
-        self.o_lf = up(self.o_lf)
-        self.x_lf = up(self.x_lf)
-
-        self.detail = self.refinement_net.forward(self.align_B, self.align_A, self.x_lf)
-
-        self.refinement = self.detail + self.o_lf
-
-
+            self.o_lf, self.x_lf = self.netG.forward(self.align_B_half, self.align_A_half)
+            self.o_lf = up(self.o_lf)
+            self.x_lf = up(self.x_lf)
+            self.detail = self.refinement_net.forward(self.align_B, self.align_A, self.x_lf)
+            self.refinement = self.detail + self.o_lf
+            output = latent2im(self.refinement.data)
+        return output

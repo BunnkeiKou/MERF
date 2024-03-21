@@ -14,27 +14,6 @@ import time
 import scipy
 
 
-# H W C 2
-def select_ref_idx(seq_imgs, win_size=None, expos_thres=None):
-    if win_size == None:
-        win_size = 3
-
-    if expos_thres == None:
-        expos_thres = 0.01
-
-    seq_imgs = np.double(seq_imgs)
-    # seq_imgs = reorder_by_lum(seq_imgs)
-    [_, _, size_3, size_4] = seq_imgs.shape
-    window = np.ones((win_size, win_size, 3))
-    window = window / window.sum()
-    positive = np.zeros((size_4, 1))  # size_4 是图片序列数量
-    for i in range(size_4):
-        conved_img = scipy.signal.convolve(seq_imgs[:, :, :, i], window, 'valid')
-        positive[i] = np.sum(np.sum((conved_img < expos_thres) | (conved_img > 1 - expos_thres)))
-    ref_idx = np.argmin(positive)  # 最小值对应的索引
-    return ref_idx
-
-
 class PairDataset(BaseDataset):
     def initialize(self, opt):
         self.opt = opt

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
-  <component name="PublishConfigData" remoteFilesAllowedToDisappearOnAutoupload="false">
+  <component name="PublishConfigData" autoUpload="Always" serverName="timer@202.114.107.175:5170 password" remoteFilesAllowedToDisappearOnAutoupload="false">
     <serverData>
       <paths name="5210">
         <serverdata>
@@ -13,6 +13,13 @@
         <serverdata>
           <mappings>
             <mapping local="$PROJECT_DIR$" web="/" />
+          </mappings>
+        </serverdata>
+      </paths>
+      <paths name="MERF">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/data/H/MERF" local="$PROJECT_DIR$" web="/" />
           </mappings>
         </serverdata>
       </paths>
@@ -135,6 +142,13 @@
           </mappings>
         </serverdata>
       </paths>
+      <paths name="timer@202.114.107.175:5170 password (14)">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/data/H/MERF" local="$PROJECT_DIR$" />
+          </mappings>
+        </serverdata>
+      </paths>
       <paths name="timer@202.114.107.175:5170 password (2)">
         <serverdata>
           <mappings>
@@ -199,5 +213,6 @@
         </serverdata>
       </paths>
     </serverData>
+    <option name="myAutoUpload" value="ALWAYS" />
   </component>
 </project>
