@@ -1,7 +1,7 @@
 
 def create_model(opt):
-    model = None
-    print(opt.model)
+    model = 'MERF'
+    print(model)
     from .single_model import SingleModel
     model = SingleModel()
     model.initialize(opt)

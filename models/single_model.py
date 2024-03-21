@@ -57,7 +57,7 @@ def flow_warp2(x, flow, interp_mode='bilinear', padding_mode='zeros', align_corn
 
 class SingleModel(BaseModel):
     def name(self):
-        return 'SingleGANModel'
+        return 'MERF'
 
     # opt为参数类
     def initialize(self, opt):
