@@ -19,7 +19,7 @@
       <paths name="MERF">
         <serverdata>
           <mappings>
-            <mapping deploy="/data/H/MERF" local="$PROJECT_DIR$" web="/" />
+            <mapping local="$PROJECT_DIR$" web="/" />
           </mappings>
         </serverdata>
       </paths>
