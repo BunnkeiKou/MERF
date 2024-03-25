@@ -17,5 +17,5 @@ Pillow 9.4.0
 We provide some example images for testing in `./test_data/`
 
 ```
-python predict.py --dataroot your/data/root
+python test.py --dataroot your/data/root
 ```
